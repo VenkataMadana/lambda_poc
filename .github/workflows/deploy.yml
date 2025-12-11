@@ -84,7 +84,7 @@ jobs:
           echo "Dev API URL: $API_URL"
 
   deploy-uat:
-    needs: build
+    needs: deploy-dev
     runs-on: ubuntu-latest
     environment: uat
     if: github.event_name == 'workflow_dispatch'
@@ -131,7 +131,7 @@ jobs:
           echo "UAT API URL: $API_URL"
 
   deploy-prod:
-    needs: build
+    needs: deploy-uat
     runs-on: ubuntu-latest
     environment: prod
     if: github.event_name == 'workflow_dispatch'
