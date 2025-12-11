@@ -69,21 +69,36 @@ jobs:
           STACK_NAME="simple-http-lambda-stack-dev"
           if aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} 2>/dev/null; then
             echo "Stack exists. Getting stack events for debugging..."
-            aws cloudformation describe-stack-events --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} --query 'StackEvents[0:5]' || true
+            aws cloudformation describe-stack-events --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} --query 'StackEvents[0:10]' --output table || true
           else
             echo "Stack does not exist. Will be created."
           fi
 
       - name: Deploy to Dev
         run: |
+          STACK_NAME="simple-http-lambda-stack-dev"
           sam deploy \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
-            --stack-name simple-http-lambda-stack-dev \
+            --stack-name $STACK_NAME \
             --resolve-s3 \
             --force-upload \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-            --region ${{ env.AWS_REGION }}
+            --region ${{ env.AWS_REGION }} || {
+              echo "\n=== Deployment Failed - Checking for validation errors ==="
+              aws cloudformation describe-stack-events \
+                --stack-name $STACK_NAME \
+                --region ${{ env.AWS_REGION }} \
+                --query 'StackEvents[0:20]' \
+                --output table || true
+              echo "\n=== Checking CloudFormation Hooks ==="
+              aws cloudformation list-stacks \
+                --stack-status-filter CREATE_FAILED \
+                --region ${{ env.AWS_REGION }} \
+                --query 'StackSummaries[?StackName==`'$STACK_NAME'`]' \
+                --output table || true
+              exit 1
+            }
 
       - name: Get Dev API URL
         run: |
@@ -127,21 +142,36 @@ jobs:
           STACK_NAME="simple-http-lambda-stack-uat"
           if aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} 2>/dev/null; then
             echo "Stack exists. Getting recent events for debugging..."
-            aws cloudformation describe-stack-events --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} --query 'StackEvents[0:5]' --output table || true
+            aws cloudformation describe-stack-events --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} --query 'StackEvents[0:10]' --output table || true
           else
             echo "Stack does not exist. Will be created."
           fi
 
       - name: Deploy to UAT
         run: |
+          STACK_NAME="simple-http-lambda-stack-uat"
           sam deploy \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
-            --stack-name simple-http-lambda-stack-uat \
+            --stack-name $STACK_NAME \
             --resolve-s3 \
             --force-upload \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-            --region ${{ env.AWS_REGION }}
+            --region ${{ env.AWS_REGION }} || {
+              echo "\n=== Deployment Failed - Checking for validation errors ==="
+              aws cloudformation describe-stack-events \
+                --stack-name $STACK_NAME \
+                --region ${{ env.AWS_REGION }} \
+                --query 'StackEvents[0:20]' \
+                --output table || true
+              echo "\n=== Checking CloudFormation Hooks ==="
+              aws cloudformation list-stacks \
+                --stack-status-filter CREATE_FAILED \
+                --region ${{ env.AWS_REGION }} \
+                --query 'StackSummaries[?StackName==`'$STACK_NAME'`]' \
+                --output table || true
+              exit 1
+            }
 
       - name: Get UAT API URL
         run: |
@@ -185,21 +215,36 @@ jobs:
           STACK_NAME="simple-http-lambda-stack-stage"
           if aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} 2>/dev/null; then
             echo "Stack exists. Getting recent events for debugging..."
-            aws cloudformation describe-stack-events --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} --query 'StackEvents[0:5]' --output table || true
+            aws cloudformation describe-stack-events --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} --query 'StackEvents[0:10]' --output table || true
           else
             echo "Stack does not exist. Will be created."
           fi
 
       - name: Deploy to Stage
         run: |
+          STACK_NAME="simple-http-lambda-stack-stage"
           sam deploy \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
-            --stack-name simple-http-lambda-stack-stage \
+            --stack-name $STACK_NAME \
             --resolve-s3 \
             --force-upload \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-            --region ${{ env.AWS_REGION }}
+            --region ${{ env.AWS_REGION }} || {
+              echo "\n=== Deployment Failed - Checking for validation errors ==="
+              aws cloudformation describe-stack-events \
+                --stack-name $STACK_NAME \
+                --region ${{ env.AWS_REGION }} \
+                --query 'StackEvents[0:20]' \
+                --output table || true
+              echo "\n=== Checking CloudFormation Hooks ==="
+              aws cloudformation list-stacks \
+                --stack-status-filter CREATE_FAILED \
+                --region ${{ env.AWS_REGION }} \
+                --query 'StackSummaries[?StackName==`'$STACK_NAME'`]' \
+                --output table || true
+              exit 1
+            }
 
       - name: Get Stage API URL
         run: |
