@@ -1,0 +1,16 @@
+# This file defines the environments for deployment
+
+# Development environment
+DEV_ENV:
+  stack_name: simple-http-lambda-stack-dev
+  region: us-east-1
+
+# User Acceptance Testing environment
+UAT_ENV:
+  stack_name: simple-http-lambda-stack-uat
+  region: us-east-1
+
+# Production environment
+PROD_ENV:
+  stack_name: simple-http-lambda-stack-prod
+  region: us-east-1

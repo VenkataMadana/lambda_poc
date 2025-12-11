@@ -10,7 +10,7 @@ env:
   AWS_REGION: us-east-1  # Change to your preferred region
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     
     steps:
@@ -27,6 +27,31 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt -t .; fi
 
+      - name: Build SAM application
+        run: sam build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: .aws-sam/build
+
+  deploy-dev:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: dev
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: .aws-sam/build
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -39,23 +64,123 @@ jobs:
         with:
           use-installer: true
 
-      - name: Build SAM application
-        run: sam build
-
-      - name: Deploy to AWS
+      - name: Deploy to Dev
         run: |
           sam deploy \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
-            --stack-name simple-http-lambda-stack \
+            --stack-name simple-http-lambda-stack-dev \
             --resolve-s3 \
             --capabilities CAPABILITY_IAM \
             --region ${{ env.AWS_REGION }}
 
+      - name: Get Dev API URL
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name simple-http-lambda-stack-dev \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          echo "Dev API URL: $API_URL"
+
+  deploy-uat:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: uat
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: .aws-sam/build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up AWS SAM
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Deploy to UAT
+        run: |
+          sam deploy \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --stack-name simple-http-lambda-stack-uat \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Get UAT API URL
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name simple-http-lambda-stack-uat \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          echo "UAT API URL: $API_URL"
+
+  deploy-prod:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: prod
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: .aws-sam/build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up AWS SAM
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Deploy to Production
+        run: |
+          sam deploy \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --stack-name simple-http-lambda-stack-prod \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Get Prod API URL
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name simple-http-lambda-stack-prod \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          echo "Production API URL: $API_URL"
+
       - name: Get API URL
         run: |
           API_URL=$(aws cloudformation describe-stacks \
-            --stack-name simple-http-lambda-stack \
+            --stack-name simple-http-lambda-stack-dev \
             --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
             --output text \
             --region ${{ env.AWS_REGION }})
