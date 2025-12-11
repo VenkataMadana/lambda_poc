@@ -23,7 +23,7 @@ def lambda_handler(event, context):
     # Process the request based on method
     if http_method == 'GET':
         response_body = {
-            'message': 'Hello from AWS Lambda!',
+            'message': 'Hello from braintree',
             'path': path,
             'method': http_method,
             'queryParameters': query_params
