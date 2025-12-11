@@ -2,17 +2,31 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Simple HTTP Lambda Function
 
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - uat
+      - stage
+    Description: Deployment environment
+
 Globals:
   Function:
     Timeout: 30
     MemorySize: 128
     Runtime: python3.14
+    Tags:
+      Environment: !Ref Environment
+      ManagedBy: CloudFormation
+      Project: simple-http-lambda
 
 Resources:
   HttpLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: simple-http-lambda
+      FunctionName: !Sub 'simple-http-lambda-${Environment}'
       CodeUri: .
       Handler: lambda_function.lambda_handler
       Description: A simple HTTP Lambda function
@@ -45,3 +59,9 @@ Outputs:
   FunctionArn:
     Description: "Lambda Function ARN"
     Value: !GetAtt HttpLambdaFunction.Arn
+  FunctionName:
+    Description: "Lambda Function Name"
+    Value: !Ref HttpLambdaFunction
+  Environment:
+    Description: "Deployment Environment"
+    Value: !Ref Environment

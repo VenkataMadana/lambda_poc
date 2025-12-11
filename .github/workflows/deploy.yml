@@ -84,6 +84,7 @@ jobs:
             --resolve-s3 \
             --force-upload \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --parameter-overrides Environment=dev \
             --region ${{ env.AWS_REGION }} || {
               echo "\n=== Deployment Failed - Checking for validation errors ==="
               aws cloudformation describe-stack-events \
@@ -157,6 +158,7 @@ jobs:
             --resolve-s3 \
             --force-upload \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --parameter-overrides Environment=uat \
             --region ${{ env.AWS_REGION }} || {
               echo "\n=== Deployment Failed - Checking for validation errors ==="
               aws cloudformation describe-stack-events \
@@ -230,6 +232,7 @@ jobs:
             --resolve-s3 \
             --force-upload \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --parameter-overrides Environment=stage \
             --region ${{ env.AWS_REGION }} || {
               echo "\n=== Deployment Failed - Checking for validation errors ==="
               aws cloudformation describe-stack-events \
