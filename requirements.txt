@@ -1,0 +1,5 @@
+# No external dependencies required for basic Lambda
+# Add any additional packages you need here
+# For example:
+# requests==2.31.0
+# boto3==1.34.0

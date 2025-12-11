@@ -1,0 +1,63 @@
+name: Deploy Lambda to AWS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1  # Change to your preferred region
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt -t .; fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up AWS SAM
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Build SAM application
+        run: sam build
+
+      - name: Deploy to AWS
+        run: |
+          sam deploy \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --stack-name simple-http-lambda-stack \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Get API URL
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name simple-http-lambda-stack \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          echo "API URL: $API_URL"
+          echo "::notice::Lambda deployed successfully! API URL: $API_URL"

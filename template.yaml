@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Simple HTTP Lambda Function
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Runtime: python3.14
+
+Resources:
+  HttpLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: simple-http-lambda
+      CodeUri: .
+      Handler: lambda_function.lambda_handler
+      Description: A simple HTTP Lambda function
+      Events:
+        GetRequest:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: GET
+        PostRequest:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: POST
+        RootGet:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+        RootPost:
+          Type: Api
+          Properties:
+            Path: /
+            Method: POST
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  FunctionArn:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt HttpLambdaFunction.Arn
