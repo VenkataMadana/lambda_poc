@@ -71,6 +71,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --stack-name simple-http-lambda-stack-dev \
             --resolve-s3 \
+            --force-upload \
             --capabilities CAPABILITY_IAM \
             --region ${{ env.AWS_REGION }}
 
@@ -118,6 +119,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --stack-name simple-http-lambda-stack-uat \
             --resolve-s3 \
+            --force-upload \
             --capabilities CAPABILITY_IAM \
             --region ${{ env.AWS_REGION }}
 
@@ -165,6 +167,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --stack-name simple-http-lambda-stack-prod \
             --resolve-s3 \
+            --force-upload \
             --capabilities CAPABILITY_IAM \
             --region ${{ env.AWS_REGION }}
 
