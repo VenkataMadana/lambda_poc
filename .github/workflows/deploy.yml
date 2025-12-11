@@ -64,6 +64,16 @@ jobs:
         with:
           use-installer: true
 
+      - name: Check stack status
+        run: |
+          STACK_NAME="simple-http-lambda-stack-dev"
+          if aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Stack exists. Getting stack events for debugging..."
+            aws cloudformation describe-stack-events --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} --query 'StackEvents[0:5]' || true
+          else
+            echo "Stack does not exist. Will be created."
+          fi
+
       - name: Deploy to Dev
         run: |
           sam deploy \
@@ -72,7 +82,7 @@ jobs:
             --stack-name simple-http-lambda-stack-dev \
             --resolve-s3 \
             --force-upload \
-            --capabilities CAPABILITY_IAM \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --region ${{ env.AWS_REGION }}
 
       - name: Get Dev API URL
@@ -112,6 +122,16 @@ jobs:
         with:
           use-installer: true
 
+      - name: Check UAT stack status
+        run: |
+          STACK_NAME="simple-http-lambda-stack-uat"
+          if aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Stack exists. Getting recent events for debugging..."
+            aws cloudformation describe-stack-events --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} --query 'StackEvents[0:5]' --output table || true
+          else
+            echo "Stack does not exist. Will be created."
+          fi
+
       - name: Deploy to UAT
         run: |
           sam deploy \
@@ -120,7 +140,7 @@ jobs:
             --stack-name simple-http-lambda-stack-uat \
             --resolve-s3 \
             --force-upload \
-            --capabilities CAPABILITY_IAM \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --region ${{ env.AWS_REGION }}
 
       - name: Get UAT API URL
@@ -132,10 +152,10 @@ jobs:
             --region ${{ env.AWS_REGION }})
           echo "UAT API URL: $API_URL"
 
-  deploy-prod:
+  deploy-stage:
     needs: deploy-uat
     runs-on: ubuntu-latest
-    environment: prod
+    environment: stage
     if: github.event_name == 'workflow_dispatch'
     
     steps:
@@ -160,32 +180,32 @@ jobs:
         with:
           use-installer: true
 
-      - name: Deploy to Production
+      - name: Check Stage stack status
+        run: |
+          STACK_NAME="simple-http-lambda-stack-stage"
+          if aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Stack exists. Getting recent events for debugging..."
+            aws cloudformation describe-stack-events --stack-name $STACK_NAME --region ${{ env.AWS_REGION }} --query 'StackEvents[0:5]' --output table || true
+          else
+            echo "Stack does not exist. Will be created."
+          fi
+
+      - name: Deploy to Stage
         run: |
           sam deploy \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
-            --stack-name simple-http-lambda-stack-prod \
+            --stack-name simple-http-lambda-stack-stage \
             --resolve-s3 \
             --force-upload \
-            --capabilities CAPABILITY_IAM \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --region ${{ env.AWS_REGION }}
 
-      - name: Get Prod API URL
+      - name: Get Stage API URL
         run: |
           API_URL=$(aws cloudformation describe-stacks \
-            --stack-name simple-http-lambda-stack-prod \
+            --stack-name simple-http-lambda-stack-stage \
             --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
             --output text \
             --region ${{ env.AWS_REGION }})
-          echo "Production API URL: $API_URL"
-
-      - name: Get API URL
-        run: |
-          API_URL=$(aws cloudformation describe-stacks \
-            --stack-name simple-http-lambda-stack-dev \
-            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
-            --output text \
-            --region ${{ env.AWS_REGION }})
-          echo "API URL: $API_URL"
-          echo "::notice::Lambda deployed successfully! API URL: $API_URL"
+          echo "Stage API URL: $API_URL"
